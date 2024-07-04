@@ -687,4 +687,70 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+
 }
+
+ // find proc by id and return it
+struct proc* 
+find_proc(int pid)
+{
+  struct proc *p;
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      release(&p->lock);
+      return p;
+    }
+    release(&p->lock);
+  }
+  return 0;
+}
+
+uint64
+map_shared_pages(struct proc* src_proc, struct proc* dst_proc, uint64 src_va, uint64 size) {
+  pte_t *src_pte;
+  uint64 num_pages = (PGROUNDUP(size)) / PGSIZE; // Calculate the number of pages, rounding up
+  uint64 allocated_pages = 0;
+  uint64 offset = src_va - PGROUNDDOWN(src_va); // Offset from the start of the page
+  src_va = PGROUNDDOWN(src_va); // Starting virtual address in the source process
+
+  for (uint64 i = 0; i < num_pages; i++) {
+    
+    src_pte = walk(src_proc->pagetable, src_va, 0);
+    if (src_pte == 0 || (PTE_FLAGS(*src_pte) & PTE_V) == 0) {
+      goto bad;
+    }
+    
+    if(mappages(dst_proc->pagetable, PGROUNDUP(dst_proc->sz), PGSIZE, PTE2PA(*src_pte), PTE_FLAGS(*src_pte) | PTE_S) != 0){
+      goto bad;
+    }
+
+    dst_proc->sz += PGSIZE; // increase the size of the destination process
+    src_va += PGSIZE; // move to the next page
+    allocated_pages++;
+  }
+
+  // Return the starting virtual address in dst_proc where the mapping begins (including the offset)
+  return PGROUNDDOWN(dst_proc->sz - (num_pages * PGSIZE)) + offset;
+
+  bad:
+    // Unmap the shared pages if an error occurs
+    unmap_shared_pages(dst_proc, PGROUNDUP(dst_proc->sz) - allocated_pages*PGSIZE , allocated_pages*PGSIZE);
+    return -1;
+}
+
+uint64
+unmap_shared_pages(struct proc* p, uint64 va, uint64 size) {
+
+  uint64 num_pages = (PGROUNDUP(size)) / PGSIZE; // Calculate the number of pages, rounding up
+
+  if(p->sz < size) {
+    return -1;
+  }
+
+  uvmunmap(p->pagetable,PGROUNDDOWN(va) , num_pages, 0);
+  p->sz -= num_pages * PGSIZE;
+  return 0;
+}
+
+

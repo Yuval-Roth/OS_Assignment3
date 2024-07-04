@@ -45,6 +45,7 @@ uint64 sys_crypto_op(void) {
     return 0;
 }
 
+
 uint64 sys_take_shared_memory_request(void) {
   struct proc *p = myproc();
   if (crypto_srv_proc == 0 || p != crypto_srv_proc) {
@@ -57,6 +58,8 @@ uint64 sys_take_shared_memory_request(void) {
   if (src_proc == 0) {
     return -1;
   }
+
+  acquire(&src_proc->lock);
   
   const uint64 dst_va = map_shared_pages(src_proc, p, req.src_va, req.size);
   if (dst_va == 0) {

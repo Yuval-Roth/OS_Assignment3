@@ -3,5 +3,20 @@
         "types.h": "c",
         "riscv.h": "c",
         "defs.h": "c",
+        "proc.h": "c",
+        "sleeplock.h": "c",
+        "user.h": "c",
+        "stdint.h": "c",
+        "syscall.h": "c",
+        "fcntl.h": "c",
+        "file.h": "c"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
     },
 }
