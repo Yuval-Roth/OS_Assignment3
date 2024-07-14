@@ -39,14 +39,15 @@ int main(void) {
 
         op = (struct crypto_op *)ptr; // Correctly cast ptr to struct crypto_op pointer
 
+        // Allocate memory for key and data
+        key = malloc(op->key_size);
+        data = malloc(op->data_size);
+
         if(op->state != CRYPTO_OP_STATE_INIT) {
             op->state = CRYPTO_OP_STATE_ERROR;
             goto update_ptr;
         }
-
-        // Allocate memory for key and data
-        key = malloc(op->key_size);
-        data = malloc(op->data_size);
+      
         if (key == 0 || data == 0) {
             printf("Memory allocation failed\n");
             exit(1);
